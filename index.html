@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>鹈鹕骑单车 · Pelican on a Bicycle — 实时 3D 环岛骑行</title>
+    <meta name="description" content="一只戴头盔、围红围巾的鹈鹕，骑着薄荷绿复古单车环绕热带小岛。Three.js 实时渲染，模型、贴图、音乐全部由代码程序化生成。" />
+    <meta name="theme-color" content="#0b1220" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="鹈鹕骑单车 · 实时 3D 环岛骑行" />
+    <meta property="og:description" content="戴头盔的鹈鹕骑着复古单车环岛：IK 蹬踏、布料围巾、昼夜循环、灯塔、海浪与生成式音乐 —— 全部程序化生成。" />
+    <meta property="og:image" content="https://hencter.github.io/pelican-bicycle-3d/og.jpg" />
+    <meta property="og:url" content="https://hencter.github.io/pelican-bicycle-3d/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://hencter.github.io/pelican-bicycle-3d/og.jpg" />
+  </head>
+  <body>
+    <canvas id="scene" aria-label="3D 场景：一只鹈鹕骑自行车环岛"></canvas>
+    <div id="bubbles" aria-hidden="true"></div>
+    <div id="flash" aria-hidden="true"></div>
+
+    <header class="topbar ui">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+          <circle cx="13" cy="35" r="8" />
+          <circle cx="36" cy="35" r="8" />
+          <path d="M13 35l8-1 5-12h8l2 13M21 34l-4-11h9" />
+          <path class="bill" d="M27 9c4-1 10 0 16 2-5 1-10 3-15 2" />
+          <path d="M24 22c-4-3-3-9 1-11 2-1 3 0 3 2" />
+        </svg>
+        <div class="brand-text">
+          <h1>鹈鹕骑单车</h1>
+          <p>Pelican on a Bicycle · 环岛实时 3D</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" data-action="sound" aria-label="声音开关（M）" aria-pressed="true" title="声音（M）">
+          <svg class="i-on" viewBox="0 0 24 24"><path d="M4 10h4l5-4v12l-5-4H4z" /><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" /></svg>
+          <svg class="i-off" viewBox="0 0 24 24"><path d="M4 10h4l5-4v12l-5-4H4z" /><path d="M17 9.5l5 5M22 9.5l-5 5" /></svg>
+        </button>
+        <button class="icon-btn" data-action="help" aria-label="操作说明" title="操作说明（?）">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.6 2.6 0 0 1 5 .9c0 1.8-2.5 2.2-2.5 4" /><circle cx="12" cy="17.3" r="0.6" /></svg>
+        </button>
+        <button class="icon-btn" data-action="fullscreen" aria-label="全屏" title="全屏">
+          <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+        </button>
+        <button class="icon-btn" data-action="hide" aria-label="隐藏界面（H）" title="隐藏界面（H）">
+          <svg viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="hud ui" aria-label="骑行数据">
+      <div class="gauge">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <path class="track" d="M 23.4 96.6 A 52 52 0 1 1 96.6 96.6" />
+          <path class="fill" id="gauge-fill" d="M 23.4 96.6 A 52 52 0 1 1 96.6 96.6" />
+        </svg>
+        <div class="gauge-val"><span id="hud-speed">0</span><small>km/h</small></div>
+      </div>
+      <dl class="stats">
+        <div><dt>踏频</dt><dd><span id="hud-cadence">0</span><small>rpm</small></dd></div>
+        <div><dt>里程</dt><dd><span id="hud-distance">0.00</span><small>km</small></dd></div>
+        <div><dt>圈数</dt><dd><span id="hud-laps">0</span></dd></div>
+        <div><dt>吃鱼</dt><dd><span id="hud-fish">0</span></dd></div>
+        <div><dt>岛上时间</dt><dd><span id="hud-clock">17:24</span></dd></div>
+      </dl>
+    </section>
+
+    <section class="actions ui" aria-label="互动">
+      <button data-action="bell" title="按铃（B）">
+        <svg viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.5 1.8h-15z" /><path d="M10 20.5a2 2 0 0 0 4 0" /></svg>
+        <span>按铃</span><kbd>B</kbd>
+      </button>
+      <button data-action="feed" title="投喂（F）">
+        <svg viewBox="0 0 24 24"><path d="M2.5 12c3.2-4.2 8.4-5.2 12.5-3l4.5-3.2v12.4L15 15c-4.1 2.2-9.3 1.2-12.5-3z" /><circle cx="7.5" cy="11" r="0.9" /></svg>
+        <span>投喂</span><kbd>F</kbd>
+      </button>
+      <button data-action="hop" title="跳跃（空格）">
+        <svg viewBox="0 0 24 24"><path d="M3 19.5h7M14 19.5h7" /><path d="M6 15.5C8 9 14 6.5 19 8" /><path d="M16 4.8l3.3 3.1-4.3 1.2" /></svg>
+        <span>跳跃</span><kbd>空格</kbd>
+      </button>
+      <button data-action="wave" title="挥手（E）">
+        <svg viewBox="0 0 24 24"><path d="M7.5 12.5V6.2a1.5 1.5 0 0 1 3 0v5.3M10.5 11V4.6a1.5 1.5 0 0 1 3 0V11M13.5 11.2V5.8a1.5 1.5 0 0 1 3 0v6.4M16.5 12V9a1.5 1.5 0 0 1 3 0v5a7 7 0 0 1-7 7H12a6 6 0 0 1-5.1-2.9l-2.6-4.3a1.5 1.5 0 0 1 2.5-1.6l.7 1" /></svg>
+        <span>挥手</span><kbd>E</kbd>
+      </button>
+      <button data-action="photo" title="拍照（P）">
+        <svg viewBox="0 0 24 24"><path d="M3.5 8h3.4l2-2.6h6.2l2 2.6h3.4v11h-17z" /><circle cx="12" cy="13.2" r="3.6" /></svg>
+        <span>拍照</span><kbd>P</kbd>
+      </button>
+    </section>
+
+    <aside class="panel ui" id="panel">
+      <button class="panel-toggle" data-action="panel" aria-expanded="false" aria-controls="panel-body">
+        <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></svg>
+        <span>设置</span>
+      </button>
+      <div class="panel-body" id="panel-body">
+        <div class="field">
+          <label for="speed">目标速度 <output id="speed-out">18 km/h</output></label>
+          <input id="speed" type="range" min="0" max="40" step="1" value="18" />
+        </div>
+        <div class="field">
+          <label for="tod">岛上时间 <output id="tod-out">17:24</output></label>
+          <input id="tod" type="range" min="0" max="24" step="0.05" value="17.4" />
+          <div class="presets" role="group" aria-label="时间预设">
+            <button data-time="6.3">日出</button>
+            <button data-time="12.5">正午</button>
+            <button data-time="17.4">黄昏</button>
+            <button data-time="21.5">星夜</button>
+            <label class="check"><input type="checkbox" id="timelapse" /> 时间流逝</label>
+          </div>
+        </div>
+        <div class="field">
+          <span class="label">镜头 <kbd>C</kbd></span>
+          <div class="seg" role="radiogroup" aria-label="镜头模式">
+            <button role="radio" data-cam="chase" aria-checked="true">追随</button>
+            <button role="radio" data-cam="cinematic" aria-checked="false">电影</button>
+            <button role="radio" data-cam="orbit" aria-checked="false">环绕</button>
+            <button role="radio" data-cam="pov" aria-checked="false">鹈鹕视角</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="label">装扮</span>
+          <div class="chips">
+            <button data-acc="helmet" aria-pressed="true">头盔</button>
+            <button data-acc="scarf" aria-pressed="true">围巾</button>
+            <button data-acc="glasses" aria-pressed="false">墨镜</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="label">画质</span>
+          <div class="seg" role="radiogroup" aria-label="画质">
+            <button role="radio" data-quality="low" aria-checked="false">流畅</button>
+            <button role="radio" data-quality="medium" aria-checked="false">均衡</button>
+            <button role="radio" data-quality="high" aria-checked="true">精美</button>
+          </div>
+        </div>
+        <div class="field row">
+          <span class="label">背景音乐</span>
+          <button class="switch" data-action="music" role="switch" aria-checked="true" aria-label="背景音乐"><span></span></button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="shot-label ui" id="shot-label" aria-hidden="true"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <div class="help" id="help" hidden>
+      <div class="help-card" role="dialog" aria-modal="true" aria-labelledby="help-title">
+        <h2 id="help-title">操作说明</h2>
+        <div class="keys">
+          <div><kbd>W</kbd><kbd>S</kbd> / <kbd>↑</kbd><kbd>↓</kbd><span>加速 / 减速（减速时停止蹬踏，能听到飞轮棘轮声）</span></div>
+          <div><kbd>空格</kbd><span>兔跳：放平踏板、张开翅膀</span></div>
+          <div><kbd>F</kbd><span>从车篮抛一条鱼，鹈鹕用喉囊接住、吞下</span></div>
+          <div><kbd>B</kbd><span>按车铃</span></div>
+          <div><kbd>E</kbd><span>朝镜头挥手</span></div>
+          <div><kbd>C</kbd> / <kbd>1</kbd>–<kbd>4</kbd><span>切换镜头：追随 / 电影 / 环绕（可拖拽）/ 鹈鹕视角</span></div>
+          <div><kbd>T</kbd><span>时间流逝开关</span><kbd>N</kbd><span>黄昏 / 星夜</span></div>
+          <div><kbd>G</kbd><span>墨镜</span><kbd>H</kbd><span>隐藏界面</span><kbd>P</kbd><span>拍照</span></div>
+        </div>
+        <p class="about">
+          自行车按真实几何搭建：菱形车架、72° 头管、42T/16T 齿比，链条逐节沿齿盘切线运动；鹈鹕双腿用两段 IK 贴合踏板，翅膀握住车把，头部像真正的鸟一样保持稳定。围巾是 Verlet 布料模拟，海水根据水深着色并在夜里发出荧光。<br />
+          没有使用任何模型、图片或音频文件：地形、植被、羽毛法线贴图、车铃与背景音乐都由代码实时生成。
+        </p>
+        <button class="close" data-action="help-close">知道了</button>
+      </div>
+    </div>
+
+    <div class="loader" id="loader">
+      <div class="loader-card">
+        <svg class="loader-art" id="loader-art" viewBox="0 0 260 170" aria-hidden="true">
+          <line class="ground" x1="10" y1="153" x2="250" y2="153" />
+          <g class="wheel" id="la-wheel-r" transform="translate(66 122)">
+            <circle r="30" /><circle r="3" />
+            <g class="spokes"><line x1="-28" y1="0" x2="28" y2="0" /><line x1="0" y1="-28" x2="0" y2="28" /><line x1="-20" y1="-20" x2="20" y2="20" /><line x1="-20" y1="20" x2="20" y2="-20" /></g>
+          </g>
+          <g class="wheel" id="la-wheel-f" transform="translate(194 122)">
+            <circle r="30" /><circle r="3" />
+            <g class="spokes"><line x1="-28" y1="0" x2="28" y2="0" /><line x1="0" y1="-28" x2="0" y2="28" /><line x1="-20" y1="-20" x2="20" y2="20" /><line x1="-20" y1="20" x2="20" y2="-20" /></g>
+          </g>
+          <path class="frame" d="M66 122 L116 126 L104 80 Z M104 80 L166 78 M116 126 L171 92 M168 76 L172 94 L194 122 M166 78 L162 66 L150 64" />
+          <path class="saddle" d="M92 76 q10 -5 20 0 z" />
+          <path class="leg" id="la-leg-far" d="" />
+          <g class="pelican">
+            <path class="tail" d="M74 60 l-12 -6 l4 10 z" />
+            <ellipse class="body" cx="102" cy="58" rx="31" ry="19" transform="rotate(-16 102 58)" />
+            <path class="neck" d="M122 48 C 142 38 118 26 136 14" />
+            <path class="pouch" d="M147 19 Q 178 46 213 27 L 150 18 z" />
+            <path class="bill" d="M144 9 L 214 24 L 150 19 z" />
+            <circle class="head" cx="140" cy="13" r="10" />
+            <circle class="eye" cx="143" cy="10" r="1.8" />
+            <path class="helmet" d="M130 9 a 11 9 0 0 1 21 -2 z" />
+            <path class="wing" d="M112 44 C 132 48 146 58 152 66 L 140 70 C 132 62 118 56 106 56 z" />
+            <path class="scarf" d="M121 44 q -12 2 -26 -6 q 8 10 24 10 z" />
+          </g>
+          <path class="leg" id="la-leg-near" d="" />
+          <line class="crank" id="la-crank" x1="116" y1="126" x2="116" y2="114" />
+        </svg>
+        <h2>鹈鹕骑单车</h2>
+        <p class="tagline">一只鹈鹕，一辆单车，一座小岛。</p>
+        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="bar" id="load-bar"></div></div>
+        <p class="load-text" id="load-text">正在准备…</p>
+        <button class="start" id="start" hidden>开始骑行</button>
+        <p class="fineprint">模型、贴图、音效全部由代码实时生成 · 建议开启声音</p>
+      </div>
+    </div>
+    <noscript><div class="noscript">需要启用 JavaScript 才能观看 3D 场景。</div></noscript>
+    <script type="module" src="/src/app.js"></script>
+  </body>
+</html>
