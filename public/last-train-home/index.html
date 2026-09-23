@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#060806">
+  <title>末班车：下班生还 | 通关就下班 Ⅲ</title>
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <div class="crt-power" aria-hidden="true"></div>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="eyebrow">CLOCK OUT // EPISODE 03</span><h1>末班车<span class="cursor" aria-hidden="true">█</span></h1><p>下班生还 · 18:00 防线</p></div>
+      <div class="top-actions"><span id="best" class="best">BEST 0</span><button id="sound-btn" type="button" aria-label="切换音效" aria-pressed="false">声音：关</button><button id="pause-btn" type="button">暂停</button></div>
+    </header>
+    <main class="layout">
+      <section class="screen" aria-label="游戏战场">
+        <div class="screen-hud"><div><small>STAGE</small><strong id="wave">01 / 03</strong></div><div><small>TIME</small><strong id="time">00:00</strong></div><div><small>车体</small><strong id="hp">100 / 100</strong></div><div><small>工牌</small><strong id="credits">0</strong></div></div>
+        <div class="canvas-wrap"><canvas id="game" width="480" height="720" aria-label="轨道上的末班车战场"></canvas><div id="slot-controls" class="slot-controls" aria-label="车厢部署格位"></div><div id="overlay" class="overlay"><div class="overlay-inner"><span class="eyebrow">LAST TRAIN // 18:00</span><h2 id="overlay-title">末班车，发车</h2><p id="overlay-text">感染的加班者追上了通勤列车。招募队员，守住三波冲击，准点离开废城。</p><button id="primary-btn" class="primary" type="button">开始值班</button><p class="hint">点击车厢格位部署。空格鸣笛。P 暂停。</p></div></div></div>
+        <div class="combat-bar"><button id="horn-btn" class="horn" type="button">鸣笛冲击 <span id="horn-cooldown">就绪</span></button><button id="speed-btn" type="button" aria-pressed="false">速度 ×1</button><span id="tip">先招募队员，再点击车厢空格</span></div>
+      </section>
+      <aside class="command" aria-label="车厢指挥台">
+        <div class="chapter"><span class="eyebrow">TACTICAL BOARD</span><h2>最后一班<br>不准加班</h2><p>左右夹击的感染者会扑向车厢。每个格位只能容纳一名队员，同类角色可以合成升级。</p></div>
+        <div class="meter"><div><span>下一波</span><strong id="wave-countdown">准备发车</strong></div><div class="meter-track"><span id="wave-progress"></span></div></div>
+        <div class="shop-head"><span class="eyebrow">CREW / 招募</span><span>选队员 → 点格位</span></div>
+        <div id="shop" class="shop"></div>
+        <div class="utility"><button id="repair-btn" type="button">修车 <span>费用 8</span></button><button id="reroll-btn" type="button">刷新队员 <span>费用 2</span></button></div>
+        <div class="legend"><span class="eyebrow">FIELD NOTES</span><p>击退丧尸获得工牌。每波结束有补给奖励。第 3 波会出现巨型感染者。</p><p>守住车体即可通关。失守后可立即重新开始。</p></div>
+      </aside>
+    </main>
+    <footer>独立原创原型 v0.1 · 参考列车防守品类机制 · 单机本地记录</footer>
+  </div>
+  <script type="module" src="./src/game.js"></script>
+</body>
+</html>
