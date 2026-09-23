@@ -517,7 +517,12 @@ async function boot() {
     ui.showStart(start);
   }
 
-  window.__pelican = { timings, renderer, scene, camera, rider, director, sky, island, audio, state, setTime, setCamera, takePhoto, inspect };
+  function snapshot(type = 'image/jpeg', quality = 0.9) {
+    post.render(0);
+    return canvas.toDataURL(type, quality);
+  }
+
+  window.__pelican = { timings, renderer, scene, camera, rider, director, sky, island, audio, state, setTime, setCamera, takePhoto, inspect, snapshot };
 }
 
 boot().catch((err) => {
