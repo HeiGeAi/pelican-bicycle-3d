@@ -6,6 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test": "node --test tests/*.test.js",
+    "test:train": "node --test tests/last-train-home.test.js",
+    "build:train-art": "node scripts/build-last-train-art.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },

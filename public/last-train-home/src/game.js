@@ -3,9 +3,18 @@ import { CREW, SLOTS, createGame, startGame, selectCrew, placeCrew, reroll, repa
 const $ = id => document.getElementById(id);
 const canvas = $('game');
 const ctx = canvas.getContext('2d', { alpha: false });
+ctx.imageSmoothingEnabled = false;
 const overlay = $('overlay');
 const shop = $('shop');
 const slotControls = $('slot-controls');
+const ART_NAMES = ['battlefield', 'train', 'guard', 'sniper', 'barista', 'mechanic', 'walker', 'runner', 'brute', 'boss'];
+const art = Object.fromEntries(ART_NAMES.map(name => {
+  const image = new Image();
+  image.decoding = 'async';
+  image.src = new URL(`../art/game/${name}.webp`, import.meta.url).href;
+  return [name, image];
+}));
+const artReady = name => art[name].complete && art[name].naturalWidth > 0;
 let state = createGame();
 let speed = 1;
 let soundOn = false;
@@ -36,6 +45,15 @@ function label(text, x, y, size = 13, color = '#f7e7bb', align = 'left') { ctx.f
 const rubble = Array.from({ length: 140 }, (_, i) => ({ x: (i * 173 + 43) % 480, y: (i * 227 + 17) % 720, w: (i % 4) + 2 }));
 
 function drawGround() {
+  if (artReady('battlefield')) {
+    ctx.drawImage(art.battlefield, 0, 0, 480, 720);
+    for (let i = 0; i < 24; i++) {
+      const x = (i * 173 + 43) % 480;
+      const y = (i * 227 + 17 + state.elapsed * (25 + i % 4 * 8)) % 720;
+      pixelRect(x, y, i % 3 + 1, 2, 'rgba(255,220,150,.35)');
+    }
+    return;
+  }
   pixelRect(0, 0, 480, 720, '#8e7654');
   pixelRect(0, 0, 142, 720, '#997b56'); pixelRect(337, 0, 143, 720, '#947752');
   for (const rock of rubble) {
@@ -57,6 +75,19 @@ function drawGround() {
 function drawTrain() {
   const shake = state.effects.some(e => e.kind === 'hit') ? 2 : 0;
   ctx.save(); ctx.translate(shake, 0);
+  if (artReady('train')) {
+    ctx.drawImage(art.train, 160, 315, 160, 400);
+    for (const [index, slot] of SLOTS.entries()) {
+      if (state.selected && state.status === 'playing') {
+        pixelRect(slot.x - 21, slot.y - 25, 42, 49, 'rgba(51,255,102,.12)');
+        outline(slot.x - 22, slot.y - 26, 44, 51, '#33ff66', 2);
+      } else if (!state.slots[index]) {
+        label(String(index + 1), slot.x - 16, slot.y - 13, 10, 'rgba(255,197,96,.7)');
+      }
+    }
+    ctx.restore();
+    return;
+  }
   pixelRect(140, 410, 200, 282, '#222d30');
   pixelRect(148, 421, 184, 262, '#62717a');
   pixelRect(158, 431, 164, 232, '#d16d34');
@@ -79,6 +110,12 @@ function drawTrain() {
 }
 
 function drawCrew(unit, slot) {
+  if (artReady(unit.id)) {
+    const bob = state.status === 'playing' ? Math.sin(state.elapsed * 5 + slot.x) * 1.2 : 0;
+    ctx.drawImage(art[unit.id], slot.x - 28, slot.y - 33 + bob, 56, 64);
+    if (unit.level > 1) label(`★${unit.level}`, slot.x, slot.y - 35, 12, '#ffe58d', 'center');
+    return;
+  }
   const color = CREW[unit.id].color;
   pixelRect(slot.x - 13, slot.y - 18, 26, 11, '#413325');
   pixelRect(slot.x - 10, slot.y - 20, 20, 18, '#d5b692');
@@ -94,6 +131,21 @@ function drawCrew(unit, slot) {
 
 function drawZombie(enemy) {
   const x = Math.round(enemy.x), y = Math.round(enemy.y), r = enemy.radius;
+  if (artReady(enemy.kind)) {
+    const scale = { walker: [37, 48], runner: [35, 45], brute: [50, 61], boss: [86, 98] }[enemy.kind];
+    const bob = Math.sin(state.elapsed * (enemy.kind === 'runner' ? 13 : 7) + enemy.id) * 1.5;
+    pixelRect(x - scale[0] / 3, y + scale[1] / 3, scale[0] * .66, 4, 'rgba(34,28,26,.35)');
+    ctx.save();
+    ctx.translate(x, y + bob);
+    if (x > 240) ctx.scale(-1, 1);
+    ctx.drawImage(art[enemy.kind], -scale[0] / 2, -scale[1] / 2, ...scale);
+    ctx.restore();
+    if (enemy.kind === 'brute' || enemy.kind === 'boss') {
+      pixelRect(x - r, y - scale[1] / 2 - 9, r * 2, 5, '#352722');
+      pixelRect(x - r, y - scale[1] / 2 - 9, Math.max(0, r * 2 * enemy.hp / enemy.maxHp), 5, '#ffb000');
+    }
+    return;
+  }
   pixelRect(x - r + 2, y + r - 1, r * 2, 5, 'rgba(42,38,35,.35)');
   pixelRect(x - r + 3, y - r, r * 2 - 6, r * 1.1, enemy.color);
   pixelRect(x - r + 5, y + 1, r * 2 - 10, r * 1.1, enemy.kind === 'boss' ? '#573d3a' : '#786b62');
@@ -151,8 +203,9 @@ function renderShop() {
     const item = CREW[id];
     const button = document.createElement('button');
     button.type = 'button'; button.className = 'card' + (state.selected === id ? ' selected' : '');
-    button.disabled = state.status !== 'playing';
-    button.innerHTML = `<span class="card-name"></span><span class="card-role"></span><span class="card-cost"></span>`;
+    button.disabled = state.status !== 'playing' || state.paused;
+    button.innerHTML = `<img class="card-portrait" alt="" width="58" height="70"><span class="card-copy"><span class="card-name"></span><span class="card-role"></span><span class="card-cost"></span></span>`;
+    button.querySelector('.card-portrait').src = art[id].src;
     button.querySelector('.card-name').textContent = item.name;
     button.querySelector('.card-role').textContent = item.role;
     button.querySelector('.card-cost').textContent = `${item.cost} 工牌`;
@@ -181,8 +234,8 @@ function updateUI() {
   $('wave-progress').style.width = `${Math.min(100, state.waveElapsed / 28 * 100)}%`;
   $('horn-cooldown').textContent = state.hornCooldown > 0 ? `${Math.ceil(state.hornCooldown)}s` : '就绪';
   $('horn-btn').disabled = state.status !== 'playing' || state.paused || state.hornCooldown > 0;
-  $('repair-btn').disabled = state.status !== 'playing' || state.credits < 8 || state.hp >= state.maxHp;
-  $('reroll-btn').disabled = state.status !== 'playing' || state.credits < 2;
+  $('repair-btn').disabled = state.status !== 'playing' || state.paused || state.credits < 8 || state.hp >= state.maxHp;
+  $('reroll-btn').disabled = state.status !== 'playing' || state.paused || state.credits < 2;
   $('pause-btn').textContent = state.paused ? '继续' : '暂停';
   $('tip').textContent = state.message;
   if (lastMessage !== state.message) { lastMessage = state.message; if (state.status === 'won') beep(600, .2); }
@@ -243,6 +296,15 @@ window.addEventListener('keydown', event => {
 });
 
 try { $('best').textContent = `BEST ${Number(localStorage.getItem('last-train-best') || 0)}`; } catch { /* private mode */ }
+const startButton = $('primary-btn');
+startButton.disabled = true;
+startButton.textContent = '正在装载美术…';
+Promise.allSettled(ART_NAMES.map(name => art[name].decode())).then(results => {
+  const failed = results.filter(result => result.status === 'rejected').length;
+  startButton.disabled = false;
+  startButton.textContent = '开始值班';
+  if (failed) $('overlay-text').textContent = `有 ${failed} 张美术资源未能加载，已启用备用画面，仍可继续游戏。`;
+});
 updateUI(); draw();
 function frame(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now;

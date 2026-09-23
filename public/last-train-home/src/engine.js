@@ -6,8 +6,9 @@ export const CREW = {
 };
 
 export const SLOTS = [
-  { x: 188, y: 477 }, { x: 240, y: 477 }, { x: 292, y: 477 },
-  { x: 188, y: 537 }, { x: 240, y: 537 }, { x: 292, y: 537 }
+  { x: 205, y: 475 }, { x: 275, y: 475 },
+  { x: 205, y: 545 }, { x: 275, y: 545 },
+  { x: 205, y: 610 }, { x: 275, y: 610 }
 ];
 
 const ENEMIES = {
@@ -52,14 +53,14 @@ export function startGame(state) {
 }
 
 export function selectCrew(state, id) {
-  if (state.status !== 'playing' || !state.offers.includes(id)) return false;
+  if (state.status !== 'playing' || state.paused || !state.offers.includes(id)) return false;
   state.selected = id;
   state.message = `已选${CREW[id].name}，点击空格部署，同类格位可升级`;
   return true;
 }
 
 export function placeCrew(state, index) {
-  if (state.status !== 'playing' || !state.selected || !Number.isInteger(index) || index < 0 || index >= SLOTS.length) return false;
+  if (state.status !== 'playing' || state.paused || !state.selected || !Number.isInteger(index) || index < 0 || index >= SLOTS.length) return false;
   const config = CREW[state.selected];
   const current = state.slots[index];
   if (state.credits < config.cost) { state.message = '工牌不足'; return false; }
@@ -71,7 +72,7 @@ export function placeCrew(state, index) {
 }
 
 export function reroll(state) {
-  if (state.status !== 'playing' || state.credits < 2) return false;
+  if (state.status !== 'playing' || state.paused || state.credits < 2) return false;
   state.credits -= 2;
   const previous = state.offers.join(',');
   for (let i = 0; i < 8; i++) {
@@ -83,7 +84,7 @@ export function reroll(state) {
 }
 
 export function repair(state) {
-  if (state.status !== 'playing' || state.credits < 8 || state.hp >= state.maxHp) return false;
+  if (state.status !== 'playing' || state.paused || state.credits < 8 || state.hp >= state.maxHp) return false;
   state.credits -= 8; state.hp = Math.min(state.maxHp, state.hp + 24);
   state.message = '车体修复 24';
   return true;
