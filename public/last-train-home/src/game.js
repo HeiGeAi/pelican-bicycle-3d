@@ -195,8 +195,17 @@ function setOverlay(title, text, button) {
   overlay.classList.remove('hidden');
 }
 
+function readBestScore() {
+  try {
+    const raw = Number(localStorage.getItem('last-train-best'));
+    return Number.isFinite(raw) && raw >= 0 ? raw : 0;
+  } catch {
+    return 0;
+  }
+}
+
 function renderShop() {
-  const signature = `${state.status}|${state.selected}|${state.offers.join(',')}`;
+  const signature = `${state.status}|${state.paused}|${state.selected}|${state.offers.join(',')}`;
   if (signature === shopSignature) return;
   shopSignature = signature;
   shop.replaceChildren(...state.offers.map(id => {
@@ -246,8 +255,8 @@ function updateUI() {
 function endIfNeeded() {
   if (shownEnd || (state.status !== 'won' && state.status !== 'lost')) return;
   shownEnd = true;
-  let best = state.score;
-  try { best = Math.max(Number(localStorage.getItem('last-train-best') || 0), state.score); localStorage.setItem('last-train-best', String(best)); } catch { /* private mode */ }
+  let best = Math.max(readBestScore(), state.score);
+  try { localStorage.setItem('last-train-best', String(best)); } catch { /* private mode */ }
   $('best').textContent = `BEST ${best}`;
   setOverlay(state.status === 'won' ? '准点下班成功' : '车体失守',
     `本局击退 ${state.kills} 名感染者，获得 ${state.score} 分。${state.status === 'won' ? '末班车穿过了最后一段封锁线。' : '调整队员组合，再守一次末班车。'}`,
@@ -295,7 +304,7 @@ window.addEventListener('keydown', event => {
   if (event.code === 'KeyP' || event.code === 'Escape') { event.preventDefault(); togglePause(); }
 });
 
-try { $('best').textContent = `BEST ${Number(localStorage.getItem('last-train-best') || 0)}`; } catch { /* private mode */ }
+$('best').textContent = `BEST ${readBestScore()}`;
 const startButton = $('primary-btn');
 startButton.disabled = true;
 startButton.textContent = '正在装载美术…';
